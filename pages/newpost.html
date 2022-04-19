@@ -1,0 +1,103 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+</head>
+<body>
+    <div class="editor">
+      <div x-data="editor('<p>This is where the content goes</p>')">
+        <input type="text" placeholder="Post title" x-on:change.debounce="setTitle($event)" />
+        <div class="editor-menu-fixed">
+          <button
+            @click="toggleBold()"
+            :class="{ 'is-active' : isActive('bold', updatedAt) }"
+          >
+            Bold
+          </button>
+          <button
+            @click="toggleHeading(1)"
+            :class="{ 'is-active' : isActive('heading', { level: 1 }, updatedAt) }"
+          >
+            H1
+          </button>
+          <button
+            @click="toggleHeading(2)"
+            :class="{ 'is-active' : isActive('heading', { level: 2 }, updatedAt) }"
+          >
+            H2
+          </button>
+          <button
+            @click="toggleHeading(3)"
+            :class="{ 'is-active' : isActive('heading', { level: 3 }, updatedAt) }"
+          >
+            H3
+          </button>
+        </div>
+
+        <div x-ref="editorReference"></div>
+      </div>
+    </div>
+
+  <script type="module" src="/main.js"></script>
+  <script>
+    document.addEventListener("alpine:init", () => {
+      Alpine.data("editor", (content) => {
+        let editor;
+        const ydoc = new Y.Doc()
+
+
+
+        return {
+          isActive(type, opts = {}, updatedAt) {
+            return editor.isActive(type, opts);
+          },
+          toggleBold() {
+            editor.chain().toggleBold().focus().run();
+          },
+          toggleHeading(level) {
+            editor.chain().toggleHeading({ level: level }).focus().run();
+          },
+          updatedAt: Date.now(),
+          init() {
+            const _this = this;
+
+            editor = new Editor({
+              element: this.$refs.editorReference,
+              extensions: [
+                StarterKit,
+                Collaboration.configure({
+                      document: ydoc,
+                    })
+              ],
+              content: content,
+              onCreate({ editor }) {
+                _this.updatedAt = Date.now();
+              },
+              onUpdate({ editor }) {
+                _this.updatedAt = Date.now();
+              },
+              onSelectionUpdate({ editor }) {
+                _this.updatedAt = Date.now();
+              }          
+            });
+          },
+          setTitle(event){
+            new IndexeddbPersistence(event.target.value, ydoc)
+          }
+        };
+      });
+
+    });
+
+</script>
+
+
+
+  <style>
+    body { margin: 2rem; font-family: sans-serif; }
+    button.is-active { background: black; color: white; }
+    .ProseMirror { @apply prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none border border-black; }
+  </style>
+</body>
+</html>

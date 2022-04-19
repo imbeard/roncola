@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app" class="mx-auto flex h-full" x-data="editor">
+      <div class="grid grid-cols-12 gap-8 divide-x divide-solid divide-black">
+        <div class="col-span-2 bg-roncolablue">
+          <div class="flex flex-col justify-between h-full">
+
+            <div class="mt-auto bg-white">
+                <button>CONNECT NEW SITE</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-span-3">
+          <div class="flex flex-col justify-between h-full">
+            <div x-data="postsData" class="hidden">
+               <h3>Online Posts</h3>
+              <template x-for="post in posts.slice(0,visible)" >
+                  <div>
+                      <h3 x-text="post.title.rendered" @click="openRemotePost($data.post)"></h3>
+                  </div>
+              </template>
+               <button x-show="posts.length !== 0 && visible < posts.length " @click="visible = visible + 3">Load more</button>
+            </div>
+            <div x-data="localPosts">
+               <h3>Local Posts</h3>
+              <template x-for="post in posts.slice(0,visible)" >
+                  <div>
+                      <h3 x-text="post.title" @click="openLocalPost($data.post)" ></h3>
+                  </div>
+              </template>
+               <button x-show="posts.length !== 0 && visible < posts.length " @click="visible = visible + 3">Load more</button> 
+            </div>
+
+            <div class="mt-auto bg-white">
+                <button @click="newPost">NEW POST</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-7">
+          <div class="flex flex-col justify-between h-full" x-show="showEditor">
+            <div class="editor">
+              <div>
+                <input type="text" placeholder="Post title" value="" x-model="postTitle" x-on:change.debounce="setTitle($event)" />
+                <div class="editor-menu-fixed">
+                  <button
+                    class="bg-emerald-100"
+                    @click="toggleBold()"
+                    :class="{ 'is-active' : isActive('bold', updatedAt) }"
+                  >
+                    Bold
+                  </button>
+                  <button
+                    @click="toggleHeading(1)"
+                    :class="{ 'is-active' : isActive('heading', { level: 1 }, updatedAt) }"
+                  >
+                    H1
+                  </button>
+                  <button
+                    @click="toggleHeading(2)"
+                    :class="{ 'is-active' : isActive('heading', { level: 2 }, updatedAt) }"
+                  >
+                    H2
+                  </button>
+                  <button
+                    @click="toggleHeading(3)"
+                    :class="{ 'is-active' : isActive('heading', { level: 3 }, updatedAt) }"
+                  >
+                    H3
+                  </button>
+                </div>
+
+                <div x-ref="editorReference"></div>
+              </div>
+            </div>
+            <div class="mt-auto bg-white flex justify-between">
+                <button @click="saveLocalPost($data.post)">SAVE POST LOCALLY</button>
+                <button @click="publishPost">PUBLISH POST</button>
+                <button @click="deleteLocalPost">DELETE POST</button>
+            </div>
+          </div>
+        </div>
+
+
+
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+
+        let currentID = null
+        let currentTitle
+        let editor
+        
+        Alpine.data('postsData', () => ({
+            visible: 3,
+            posts: [],
+            async init(){
+              //DA DINAMICIZZARE con current user e pwd
+              var wp = new WPAPI({ endpoint: '/api',
+                          username: 'smeme_admin',
+                          password: 'CqG4 uvUD Uaod cUIL YeLK r6OU'
+            });
+              let p = await wp.posts().embed().get()
+                
+              if(p){
+                this.posts = p
+              }
+             
+            },
+            openRemotePost(post){
+              console.log(post)
+              editor.commands.setContent(post.content.rendered)
+              this.showEditor = true
+              this.postTitle = post.title.rendered
+              //this.localpost = post
+
+            },
+
+
+        }))
+
+         Alpine.data('localPosts', () => ({
+            visible: 3,
+            posts: [],
+             async init(){
+              
+              const posts = await openDB('postsdb', 1);
+              posts.getAll('posts').then(localposts=>{
+                this.posts = localposts
+              });
+              posts.close(); 
+
+
+
+            },
+            openLocalPost(post){
+              
+              editor.commands.setContent(post.content)
+              this.showEditor = true
+              this.postTitle = post.title
+              this.localpost = post
+
+            },
+        })) 
+
+        Alpine.data("editor", () => {
+          //const doc = new Y.Doc()
+          return {
+            isActive(type, opts = {}, updatedAt) {
+              return editor.isActive(type, opts);
+            },
+            toggleBold() {
+              editor.chain().toggleBold().focus().run();
+            },
+            toggleHeading(level) {
+              editor.chain().toggleHeading({ level: level }).focus().run();
+            },
+            updatedAt: Date.now(),
+            showEditor: false,
+            postTitle:'',
+            firstSave : true,
+            localpost: null,
+            init() {
+              this.activateEditor()
+            },
+            activateEditor(){
+               const _this = this;
+
+              editor = new Editor({
+                element: this.$refs.editorReference,
+                extensions: [
+                  StarterKit.configure({
+                    //history: false,
+                  }),
+                  Image.configure({
+                    inline: true,
+                  }),
+                  //Collaboration.configure({
+                  //  document: doc,
+                  //})
+                ],
+                //content: content,
+                onCreate({ editor }) {
+                  _this.updatedAt = Date.now();
+                },
+                onUpdate({ editor }) {
+                  _this.updatedAt = Date.now();
+                },
+                onSelectionUpdate({ editor }) {
+                  _this.updatedAt = Date.now();
+                }          
+              });             
+            },
+            setTitle(event){
+              //currentTitle = event.target.value
+              
+              //this.postTitle = currentTitle
+
+            },
+            async saveLocalPost(){
+                 // if gutenberg getJSON else getHTML per ora solo getHTML
+                if (this.localpost === null){
+                  const db2 = await openDB('postsdb', 1);
+                  db2.put('posts', { id:uuidv4(), title: this.postTitle, content: editor.getHTML() });
+                  db2.close();
+                }
+                else{
+                  const db2 = await openDB('postsdb', 1);
+                  db2.put('posts', { id:this.localpost.id, title: this.postTitle, content: editor.getHTML() });
+                  db2.close();
+                }
+               
+            },
+            async deleteLocalPost(){
+                  //TODO: ALERT SEI SICURO DI VOLER CANCELLARE?
+                  const db2 = await openDB('postsdb', 1);
+                  db2.delete('posts', this.localpost.id)
+                  db2.close();
+            },
+            newPost(){
+              editor.commands.clearContent(true)
+              this.postTitle = ''
+              this.showEditor = true
+              this.firstSave = true
+              this.localpost = null
+            },
+            publishPost(){
+                var wp = new WPAPI({
+                    //TODO: rimuovere post dai post locali una volta pubblicato? aggiungere un tasto 
+                    // "sync from remote post?"
+                    //DA DINAMICIZZARE con current user e pwd
+                    endpoint: '/api',
+                    username: 'smeme_admin',
+                    password: 'CqG4 uvUD Uaod cUIL YeLK r6OU'
+                });
+                wp.posts().create({
+                    title: this.postTitle,
+                    content: editor.getHTML(),
+                    //far scegliere lo stato?
+                    status: 'publish'
+                }).then(function( response ) {
+                    console.log( response.id );
+                })
+            }
+          };
+        })
+
+    })
+
+  </script>
+
+  </body>
+</html>

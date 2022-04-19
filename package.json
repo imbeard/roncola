@@ -1,0 +1,72 @@
+{
+  "name": "roncola",
+  "private": true,
+  "version": "0.0.0",
+  "main": "app/index.js",
+  "description": "R O N C O L A",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"npm run electron:dev\"",
+    "build": "electron-forge make",
+    "preview": "vite preview",
+    "electron:dev": "cross-env IS_DEV=true electron-forge start",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^6.0.0-beta.63",
+    "@electron-forge/maker-deb": "^6.0.0-beta.63",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.63",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.63",
+    "@electron-forge/maker-zip": "^6.0.0-beta.63",
+    "@tiptap/core": "^2.0.0-beta.174",
+    "@tiptap/extension-collaboration": "^2.0.0-beta.33",
+    "@tiptap/extension-image": "^2.0.0-beta.27",
+    "@tiptap/starter-kit": "^2.0.0-beta.183",
+    "@unocss/preset-typography": "^0.30.11",
+    "@unocss/transformer-directives": "^0.30.11",
+    "alpinejs": "^3.9.5",
+    "concurrently": "^7.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "18.0.1",
+    "idb": "^7.0.1",
+    "unocss": "^0.30.11",
+    "uuid": "^8.3.2",
+    "vite": "^2.9.0",
+    "wpapi": "^1.2.2",
+    "y-indexeddb": "^9.0.7",
+    "y-webrtc": "^10.2.2",
+    "yjs": "^13.5.34"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.0"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "roncola"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  }
+}
